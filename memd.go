@@ -13,8 +13,8 @@ type Client struct {
 }
 
 func New(m *golibmc.Client) *Client {
-	var mh codec.MsgpackHandle
-	return &Client{m, log.Printf, &mh}
+	var jh codec.JsonHandle
+	return &Client{m, log.Printf, &jh}
 }
 
 func (c *Client) SetLogger(logf func(format string, params ...interface{})) *Client {
@@ -27,6 +27,7 @@ func (c *Client) SetSerializer(h codec.Handle) *Client {
 	return c
 }
 
+// GetOrSet ... Get from memcached, and if no hit, Set value gotten by callback, and return the value
 func (c *Client) GetOrSet(key string, cb func(key string) (*golibmc.Item, error)) (*golibmc.Item, error) {
 	item, err := c.Get(key)
 	if err != nil {
@@ -46,60 +47,64 @@ func (c *Client) GetOrSet(key string, cb func(key string) (*golibmc.Item, error)
 	return item, nil
 }
 
+// GetOrSetMulti ... GetMulti from memcached, and if no hit key exists,SetMulti memcached values gotten by callback, and return all values
 func (c *Client) GetOrSetMulti(keys []string, cb func(keys []string) (map[string]*golibmc.Item, error)) (map[string]*golibmc.Item, error) {
-	item_map, err := c.GetMulti(keys)
+	itemMap, err := c.GetMulti(keys)
 	if err != nil && err != golibmc.ErrCacheMiss {
 		return nil, err
 	}
-	if item_map == nil {
-		item_map = map[string]*golibmc.Item{}
+	if itemMap == nil {
+		itemMap = map[string]*golibmc.Item{}
 	}
-	hit_keys := []string{}
-	gotmap := map[string]bool{}
-	for key, _ := range item_map {
-		hit_keys = append(hit_keys, key)
-		gotmap[key] = true
+	// devide keys into hitKeys and remainKeys
+	hitKeys := []string{}
+	gotMap := map[string]bool{}
+	for key, _ := range itemMap {
+		hitKeys = append(hitKeys, key)
+		gotMap[key] = true
 	}
-	c.logf("hit keys: %s", hit_keys)
-	remain_keys := []string{}
+	c.logf("hit keys: %s", hitKeys)
+	remainKeys := []string{}
 	for _, key := range keys {
-		if _, ok := gotmap[key]; !ok {
-			remain_keys = append(remain_keys, key)
+		if _, ok := gotMap[key]; !ok {
+			remainKeys = append(remainKeys, key)
 		}
 	}
-	c.logf("remain keys: %s", remain_keys)
-	if len(remain_keys) == 0 {
-		return item_map, nil
+	c.logf("remain keys: %s", remainKeys)
+	if len(remainKeys) == 0 {
+		return itemMap, nil
 	}
 
-	cb_item_map, err := cb(remain_keys)
+	// get items respond to remain keys from callback
+	cbItemMap, err := cb(remainKeys)
 	if err != nil {
 		return nil, err
 	}
-	cb_items := []*golibmc.Item{}
-	for key, item := range cb_item_map {
-		cb_items = append(cb_items, item)
-		item_map[key] = item
+	cbItems := []*golibmc.Item{}
+	for key, item := range cbItemMap {
+		cbItems = append(cbItems, item)
+		itemMap[key] = item
 	}
-	failed_keys, err := c.SetMulti(cb_items)
+	if len(cbItems) == 0 {
+		return itemMap, nil
+	}
+
+	// cache items gotten by callback
+	failedKeys, err := c.SetMulti(cbItems)
 	if err != nil {
 		return nil, err
 	}
-	if len(failed_keys) != 0 {
-		c.logf("failed keys: %s", failed_keys)
+	if len(failedKeys) != 0 {
+		c.logf("failed keys: %s", failedKeys)
 	}
 
-	return item_map, nil
+	return itemMap, nil
 }
 
-func (c *Client) ToItem(key string, cb func() (interface{}, error), exp int64) (*golibmc.Item, error) {
-	_val, err := cb()
-	if err != nil {
-		return nil, err
-	}
-
+// ToItem ... serialize value and build *golibmc.Item
+func (c *Client) ToItem(key string, _val interface{}, exp int64) (*golibmc.Item, error) {
 	val := make([]byte, 0, 64)
-	codec.NewEncoderBytes(&val, c.serializer).Encode(_val)
+	err := codec.NewEncoderBytes(&val, c.serializer).Encode(_val)
 	if err != nil {
 		return nil, err
 	}
@@ -110,6 +115,20 @@ func (c *Client) ToItem(key string, cb func() (interface{}, error), exp int64) (
 	}, nil
 }
 
+// FromItem ... deserialize item.Value
 func (c *Client) FromItem(item *golibmc.Item, val interface{}) error {
 	return codec.NewDecoderBytes(item.Value, c.serializer).Decode(val)
+}
+
+// ToItem ... serialize values and build *golibmc.Item map
+func (c *Client) ToItemMap(keyToValue map[string]interface{}, exp int64) (map[string]*golibmc.Item, error) {
+	itemMap := map[string]*golibmc.Item{}
+	var err error
+	for key, val := range keyToValue {
+		itemMap[key], err = c.ToItem(key, val, exp)
+		if err != nil {
+			return itemMap, err
+		}
+	}
+	return itemMap, nil
 }
