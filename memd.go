@@ -1,7 +1,7 @@
 package memd
 
 import (
-	"github.com/douban/libmc/golibmc"
+	"github.com/mosasiru/libmc/golibmc"
 	"github.com/ugorji/go/codec"
 	"log"
 )
