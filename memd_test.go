@@ -8,40 +8,40 @@ import (
 	"time"
 )
 
-type Hoge struct {
-	Piyo int    `json:"hoge"`
+type Result struct {
+	Hoge int    `json:"hoge"`
 	Fuga string `json:"fuga"`
 }
 
-func HogeGetOrSet(t *testing.T) {
+func ResultGetOrSet(t *testing.T) {
 	c := New(golibmc.SimpleNew([]string{"localhost:11211"}))
 	c.SetLogger(log.Printf)
 	ck := "key1"
 	item, err := c.GetOrSet(ck, func(key string) (*golibmc.Item, error) {
-		return c.ToItem(key, Hoge{1, "aaa"}, 1)
+		return c.ToItem(key, Result{1, "aaa"}, 1)
 	})
 	if err != nil {
 		t.Error(err)
 	}
-	val := Hoge{}
-	if err := c.FromItem(item, &val); err != nil {
+	res := Result{}
+	if err := c.FromItem(item, &res); err != nil {
 		t.Error(err)
 	}
-	if val.Piyo != 1 || val.Fuga != "aaa" {
+	if res.Hoge != 1 || res.Fuga != "aaa" {
 		t.Error("invalid origin")
 	}
 
 	item, err = c.GetOrSet(ck, func(key string) (*golibmc.Item, error) {
-		return c.ToItem(key, Hoge{}, 1)
+		return c.ToItem(key, Result{}, 1)
 	})
 	if err != nil {
 		t.Error(err)
 	}
-	val = Hoge{}
-	if err := c.FromItem(item, &val); err != nil {
+	res = Result{}
+	if err := c.FromItem(item, &res); err != nil {
 		t.Error(err)
 	}
-	if val.Piyo != 1 || val.Fuga != "aaa" {
+	if res.Hoge != 1 || res.Fuga != "aaa" {
 		t.Error("invalid cache")
 	}
 
@@ -51,16 +51,16 @@ func HogeGetOrSet(t *testing.T) {
 	}
 }
 
-func HogeGetOrSetMulti(t *testing.T) {
+func ResultGetOrSetMulti(t *testing.T) {
 	c := New(golibmc.SimpleNew([]string{"localhost:11211"}))
 	c.SetLogger(log.Printf)
 	keys := []string{"key1", "key2"}
-	keyToHoge := map[string]Hoge{
-		"key1": Hoge{1, "aaa"},
-		"key2": Hoge{2, "bbb"},
+	keyToResult := map[string]Result{
+		"key1": Result{1, "aaa"},
+		"key2": Result{2, "bbb"},
 	}
 
-	item, err := c.ToItem(keys[0], keyToHoge[keys[0]], 1)
+	item, err := c.ToItem(keys[0], keyToResult[keys[0]], 1)
 	if err != nil {
 		t.Error(err)
 	}
@@ -72,7 +72,7 @@ func HogeGetOrSetMulti(t *testing.T) {
 			t.Error("cache should be only one")
 		}
 		key := keys[0]
-		return c.ToItemMap(map[string]interface{}{key: keyToHoge[key]}, 1)
+		return c.ToItemMap(map[string]interface{}{key: keyToResult[key]}, 1)
 	})
 	if err != nil {
 		t.Error(err)
@@ -81,12 +81,12 @@ func HogeGetOrSetMulti(t *testing.T) {
 		t.Error("result should be only two")
 	}
 	for key, item := range itemMap {
-		var val Hoge
-		if err = c.FromItem(item, &val); err != nil {
+		var res Result
+		if err = c.FromItem(item, &res); err != nil {
 			t.Error(err)
 		}
-		exp := keyToHoge[key]
-		if val.Piyo != exp.Piyo || val.Fuga != exp.Fuga {
+		exp := keyToResult[key]
+		if res.Hoge != exp.Hoge || res.Fuga != exp.Fuga {
 			t.Error("invalid cache")
 		}
 	}
@@ -97,31 +97,31 @@ func HogeGetOrSetMulti(t *testing.T) {
 	}
 }
 
-func HogeSerializer(t *testing.T) {
+func ResultSerializer(t *testing.T) {
 	c := New(golibmc.SimpleNew([]string{"localhost:11211"}))
 	var mh codec.MsgpackHandle
 	c.SetSerializer(&mh)
 	c.SetLogger(log.Printf)
 	ck := "key2"
-	item, err := c.ToItem(ck, Hoge{1, "aaa"}, 1)
+	item, err := c.ToItem(ck, Result{1, "aaa"}, 1)
 	if err != nil {
 		t.Error(err)
 	}
 	if err = c.Set(item); err != nil {
 		t.Error(err)
 	}
-	val := Hoge{}
+	res := Result{}
 	item, err = c.GetOrSet(ck, func(key string) (*golibmc.Item, error) {
-		return c.ToItem(key, Hoge{}, 1)
+		return c.ToItem(key, Result{}, 1)
 	})
 	if err != nil {
 		t.Error(err)
 	}
-	val = Hoge{}
-	if err := c.FromItem(item, &val); err != nil {
+	res = Result{}
+	if err := c.FromItem(item, &res); err != nil {
 		t.Error(err)
 	}
-	if val.Piyo != 1 || val.Fuga != "aaa" {
+	if res.Hoge != 1 || res.Fuga != "aaa" {
 		t.Error("invalid cache")
 	}
 }
