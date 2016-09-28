@@ -13,7 +13,7 @@ type Client struct {
 	serializer codec.Handle
 }
 
-// New create memd Client 
+// New create memd Client
 func New(m *golibmc.Client) *Client {
 	var jh codec.JsonHandle
 	return &Client{m, log.Printf, &jh}
