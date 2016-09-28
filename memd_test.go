@@ -56,8 +56,8 @@ func ResultGetOrSetMulti(t *testing.T) {
 	c.SetLogger(log.Printf)
 	keys := []string{"key1", "key2"}
 	keyToResult := map[string]Result{
-		"key1": Result{1, "aaa"},
-		"key2": Result{2, "bbb"},
+		"key1": {1, "aaa"},
+		"key2": {2, "bbb"},
 	}
 
 	item, err := c.ToItem(keys[0], keyToResult[keys[0]], 1)
