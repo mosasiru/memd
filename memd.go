@@ -60,7 +60,7 @@ func (c *Client) GetOrSetMulti(keys []string, cb func(keys []string) (map[string
 	if itemMap == nil {
 		itemMap = map[string]*golibmc.Item{}
 	}
-	// devide keys into hitKeys and remainKeys
+	// divide keys into hitKeys and remainKeys
 	hitKeys := []string{}
 	gotMap := map[string]bool{}
 	for key := range itemMap {
