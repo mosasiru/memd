@@ -47,7 +47,7 @@ func ResultGetOrSet(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 	if _, err = c.Get(ck); err != golibmc.ErrCacheMiss {
-		t.Error("cache should be expired: %s", err)
+		t.Error("cache should be expired", err)
 	}
 }
 
@@ -93,7 +93,7 @@ func ResultGetOrSetMulti(t *testing.T) {
 
 	time.Sleep(1 * time.Second)
 	if _, err = c.Get(keys[0]); err != golibmc.ErrCacheMiss {
-		t.Error("cache should be expired: %s", err)
+		t.Error("cache should be expired", err)
 	}
 }
 
