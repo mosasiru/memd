@@ -39,11 +39,11 @@ func main() {
 		return c.ToItem(key, getResultFromDB(key), 10)
 	})
 	if err != nil {
-		log.Fatalf("%s", err)
+        return
 	}
 	res := Result{}
 	if err := c.FromItem(item, &res); err != nil {
-		log.Fatalf("%s", err)
+        return
 	}
 	log.Printf("%d", res.Hoge)
 }
@@ -90,11 +90,11 @@ func main() {
 		})
 	})
 	if err != nil {
-		log.Fatalf("%s", err)
+        return
 	}
 	res := Result{}
 	if err := localMemd.FromItem(item, &res); err != nil {
-		log.Fatalf("%s", err)
+        return
 	}
 	log.Printf("%d", res.Hoge)
 }
@@ -135,12 +135,12 @@ func main() {
 		return c.ToItemMap(getResultMapFromDB(keys), 1)
 	})
 	if err != nil {
-		log.Fatalf("%s", err)
+        return
 	}
 	for key, item := range itemMap {
 		var res Result
 		if err = c.FromItem(item, &res); err != nil {
-			log.Fatalf("%s", err)
+            return
 		}
 		log.Printf("%s: %d", key, res.Hoge)
 	}
