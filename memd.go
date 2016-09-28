@@ -6,22 +6,26 @@ import (
 	"log"
 )
 
+// Client is wrapper of *golibmc.Client.
 type Client struct {
 	*golibmc.Client
 	logf       func(format string, params ...interface{})
 	serializer codec.Handle
 }
 
+// New create memd Client 
 func New(m *golibmc.Client) *Client {
 	var jh codec.JsonHandle
 	return &Client{m, log.Printf, &jh}
 }
 
+// SetLogger change its logger
 func (c *Client) SetLogger(logf func(format string, params ...interface{})) *Client {
 	c.logf = logf
 	return c
 }
 
+// SetSerializer change its serialize method. default is json.
 func (c *Client) SetSerializer(h codec.Handle) *Client {
 	c.serializer = h
 	return c
@@ -59,7 +63,7 @@ func (c *Client) GetOrSetMulti(keys []string, cb func(keys []string) (map[string
 	// devide keys into hitKeys and remainKeys
 	hitKeys := []string{}
 	gotMap := map[string]bool{}
-	for key, _ := range itemMap {
+	for key := range itemMap {
 		hitKeys = append(hitKeys, key)
 		gotMap[key] = true
 	}
@@ -120,7 +124,7 @@ func (c *Client) FromItem(item *golibmc.Item, val interface{}) error {
 	return codec.NewDecoderBytes(item.Value, c.serializer).Decode(val)
 }
 
-// ToItem ... serialize values and build *golibmc.Item map
+// ToItemMap ... serialize values and build *golibmc.Item map
 func (c *Client) ToItemMap(keyToValue map[string]interface{}, exp int64) (map[string]*golibmc.Item, error) {
 	itemMap := map[string]*golibmc.Item{}
 	var err error
