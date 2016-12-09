@@ -1,10 +1,15 @@
 package memd
 
 import (
+	"errors"
+	"log"
+
 	"github.com/douban/libmc/golibmc"
 	"github.com/ugorji/go/codec"
-	"log"
 )
+
+// ErrEmptyValue is returned by FromItem when the size of item.Value is zero.
+var ErrEmptyValue = errors.New("cannot decode from empty value")
 
 // Client is wrapper of *golibmc.Client.
 type Client struct {
@@ -121,6 +126,9 @@ func (c *Client) ToItem(key string, _val interface{}, exp int64) (*golibmc.Item,
 
 // FromItem ... deserialize item.Value
 func (c *Client) FromItem(item *golibmc.Item, val interface{}) error {
+	if len(item.Value) == 0 {
+		return ErrEmptyValue
+	}
 	return codec.NewDecoderBytes(item.Value, c.serializer).Decode(val)
 }
 
