@@ -1,11 +1,12 @@
 package memd
 
 import (
-	"github.com/douban/libmc/golibmc"
-	"github.com/ugorji/go/codec"
 	"log"
 	"testing"
 	"time"
+
+	"github.com/douban/libmc/golibmc"
+	"github.com/ugorji/go/codec"
 )
 
 type Result struct {
@@ -123,5 +124,27 @@ func ResultSerializer(t *testing.T) {
 	}
 	if res.Hoge != 1 || res.Fuga != "aaa" {
 		t.Error("invalid cache")
+	}
+}
+
+func TestResultFromItem(t *testing.T) {
+	c := New(golibmc.SimpleNew([]string{"localhost:11211"}))
+
+	tests := []struct {
+		b   []byte
+		err error
+	}{
+		{[]byte(``), ErrEmptyValue},
+		{[]byte(`{}`), nil},
+		{[]byte(`{"foo":"bar"}`), nil},
+	}
+
+	for _, tt := range tests {
+		item := &golibmc.Item{Value: tt.b}
+		var v map[string]interface{}
+		err := c.FromItem(item, &v)
+		if err != tt.err {
+			t.Errorf("FromItem(%+v, %s) = %#v", item, v, err)
+		}
 	}
 }
